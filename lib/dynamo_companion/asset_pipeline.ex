@@ -19,12 +19,25 @@ defmodule DynamoCompanion.AssetPipeline do
    state_rec(port: port)
   end
 
-  defcall get(mode, name), state: state = state_rec(port: port) do
-    request = "GET-#{String.upcase atom_to_binary(mode)} #{name}\n"
-    port <- { self, { :command, bitstring_to_list(request) } }
+  defcall include(name), state: state = state_rec(port: port) do
+    request = bitstring_to_list "include #{name}\n"
+    port <- { self, { :command, request } }
+    { num_lines, _ } = Integer.parse read_line(port)
+    lines = Enum.map 1..num_lines, fn _ -> read_line(port) end
+    reply Enum.join(lines, "\n"), state
+  end
+  defp read_line(port), do: read_line(port, [])
+  defp read_line(port, read) do
     receive do
-      { ^port, { :data, data } } -> reply(data, state)
-      other -> reply("ERR: Unexpected message received: #{inspect other}", state)
+      { ^port, { :data, data } } ->
+        case data do
+          { :noeol, chunk } -> read_line(port, [ chunk | read ])
+          { :eol, chunk }   -> [ chunk | read ] |> Enum.reverse |> Enum.join
+          _                 -> read_line(port, read)
+        end
+      other ->
+        IO.puts "ERR: Unexpected message received: #{inspect other}"
+        read_line(port, read)
     end
   end
 

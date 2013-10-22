@@ -10,10 +10,11 @@ ARGF.each_line do |line|
   command, file = line.split
   content = case command
             when "include"
-              environment[file]
+              environment[file].to_s
             else
               "content"
             end
+  $stdout << "#{content.count("\n")}\n"
   $stdout << "#{content}\n"
   $stdout.flush
 end
