@@ -1,0 +1,3 @@
+//= require ./included
+
+window.APP = {};

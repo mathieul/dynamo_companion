@@ -1,11 +1,11 @@
 defmodule DynamoCompanion.AssetPipeline do
   use ExActor, export: :asset_pipeline
 
-  defrecord State, received: [], port: nil
+  defrecordp :state_rec, received: [], port: nil
 
   definit command do
     command = if nil?(command) do
-                './bin/asset_pipeline.rb'
+                'bundle exec bin/asset_pipeline.rb'
               else
                 bitstring_to_list(command)
               end
@@ -16,10 +16,10 @@ defmodule DynamoCompanion.AssetPipeline do
                        :use_stdio,
                        :stderr_to_stdout
                      ]
-   State.new(port: port)
+   state_rec(port: port)
   end
 
-  defcall get(mode, name), state: state = State[port: port] do
+  defcall get(mode, name), state: state = state_rec(port: port) do
     request = "GET-#{String.upcase atom_to_binary(mode)} #{name}\n"
     port <- { self, { :command, bitstring_to_list(request) } }
     receive do
@@ -33,7 +33,7 @@ defmodule DynamoCompanion.AssetPipeline do
   end
 
   def terminate(_reason, state) do
-    Port.close(state.port)
+    Port.close(state_rec(state, :port))
     :ok
   end
 end
