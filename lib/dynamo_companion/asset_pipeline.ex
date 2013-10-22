@@ -19,9 +19,8 @@ defmodule DynamoCompanion.AssetPipeline do
    State.new(port: port)
   end
 
-  defcall get(mode, name), state: state do
+  defcall get(mode, name), state: state = State[port: port] do
     request = "GET-#{String.upcase atom_to_binary(mode)} #{name}\n"
-    port = state.port
     port <- { self, { :command, bitstring_to_list(request) } }
     receive do
       { ^port, { :data, data } } -> reply(data, state)
