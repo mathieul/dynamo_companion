@@ -1,9 +1,15 @@
 defmodule DynamoCompanion.SprocketsProxy do
-  def open_port(nil), do: open_port('bundle exec bin/asset_pipeline.rb')
+  require IEx
+  def start(options // []) do
+    cmd = Keyword.get options, :command, 'bundle exec bin/asset_pipeline.rb'
+    cmd = if is_bitstring(cmd), do: bitstring_to_list(cmd), else: cmd
+    port = open_port cmd
+    paths = Keyword.get options, :paths, []
+    unless Enum.empty?(paths), do: send_request(port, :append_paths, paths)
+    port
+  end
 
-  def open_port(cmd) when is_bitstring(cmd), do: open_port bitstring_to_list(cmd)
-
-  def open_port(cmd) do
+  defp open_port(cmd) do
     Port.open { :spawn, cmd }, [
       { :line, 4096 },
         :exit_status,
@@ -13,7 +19,7 @@ defmodule DynamoCompanion.SprocketsProxy do
       ]
   end
 
-  def close_port(port), do: Port.close(port)
+  def stop(port), do: Port.close(port)
 
   def send_request(port, cmd, args) do
     request = '#{cmd} #{Enum.join args, " "}\n'
