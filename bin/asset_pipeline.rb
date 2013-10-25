@@ -3,7 +3,7 @@
 require "sprockets"
 
 class SprocketsProxy
-  SUPPORTED_COMMANDS = %w[append_paths render]
+  SUPPORTED_COMMANDS = %w[append_paths get_files render_file render_bundle]
 
   attr_reader :environment
 
@@ -23,11 +23,28 @@ class SprocketsProxy
     []
   end
 
-  def render(paths)
-    if bundle = environment[paths.first]
+  def get_files(paths)
+    get(:file_list, paths.first)
+  end
+
+  def render_file(paths)
+    get(:file, paths.first)
+  end
+
+  def render_bundle(paths)
+    get(:bundle, paths.first)
+  end
+
+  def get(kind, path)
+    bundle = environment[path]
+    return "" unless bundle
+    case kind
+    when :file_list
+      bundle.to_a.map(&:logical_path).join(" ")
+    when :file
+      bundle.body
+    when :bundle
       bundle.to_s
-    else
-      ""
     end
   end
 end

@@ -9,9 +9,22 @@ defmodule DynamoCompanion.AssetPipeline do
     state_rec port: port
   end
 
-  defcall render(path), state: state = state_rec(port: port) do
-    SprocketsProxy.send_request port, :render, [ path ]
-    reply SprocketsProxy.receive_content(port), state
+  defcall get_files(path), state: state do
+    files = execute_command(:get_files, path, state)
+    reply String.split(files), state
+  end
+
+  defcall render_file(path), state: state do
+    reply execute_command(:render_file, path, state), state
+  end
+
+  defcall render_bundle(path), state: state do
+    reply execute_command(:render_bundle, path, state), state
+  end
+
+  defp execute_command command, path, state_rec(port: port) do
+    SprocketsProxy.send_request port, command, [ path ]
+    SprocketsProxy.receive_content(port)
   end
 
   defcast stop, state: state do
