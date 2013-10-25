@@ -3,6 +3,8 @@
 require "sprockets"
 
 class SprocketsProxy
+  SUPPORTED_COMMANDS = %w[append_paths render]
+
   attr_reader :environment
 
   def initialize(environment)
@@ -10,14 +12,8 @@ class SprocketsProxy
   end
 
   def process_command(command, args)
-    case command
-    when "append_paths"
-      append_paths(args)
-    when "render"
-      render(args.first)
-    else
-      "ERROR: command #{command.inspect} not supported."
-    end
+    return "ERROR: command #{command.inspect} not supported." unless SUPPORTED_COMMANDS.include?(command)
+    send(command, args)
   end
 
   private
@@ -27,11 +23,11 @@ class SprocketsProxy
     []
   end
 
-  def render(path)
-    if bundle = environment[path]
+  def render(paths)
+    if bundle = environment[paths.first]
       bundle.to_s
     else
-      "ERROR: path #{path.inspect} not found."
+      ""
     end
   end
 end
