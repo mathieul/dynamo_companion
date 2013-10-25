@@ -1,7 +1,11 @@
 defmodule DynamoCompanion.SprocketsProxy do
   require IEx
   def start(options // []) do
-    cmd = Keyword.get options, :command, 'bundle exec bin/asset_pipeline.rb'
+    cmd = Keyword.get options, :command
+    if nil?(cmd) do
+      script_path = Path.expand('../../bin/asset_pipeline.rb', __DIR__)
+      cmd = 'bundle exec #{script_path}'
+    end
     cmd = if is_bitstring(cmd), do: bitstring_to_list(cmd), else: cmd
     port = open_port cmd
     paths = Keyword.get options, :paths, []
@@ -49,7 +53,7 @@ defmodule DynamoCompanion.SprocketsProxy do
   end
 
   defp read_num_lines_in_response(port) do
-    { num_lines, rest } = Integer.parse read_line(port)
+    { num_lines, _ } = Integer.parse read_line(port)
     num_lines
   end
 end
