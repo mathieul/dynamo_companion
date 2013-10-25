@@ -20,7 +20,7 @@ class SprocketsProxy
 
   def append_paths(paths)
     paths.each { |path| environment.append_path(path) }
-    []
+    "ok"
   end
 
   def get_files(paths)
@@ -37,7 +37,7 @@ class SprocketsProxy
 
   def get(kind, path)
     bundle = environment[path]
-    return "" unless bundle
+    return path unless bundle
     case kind
     when :file_list
       bundle.to_a.map(&:logical_path).join(" ")
@@ -54,11 +54,9 @@ proxy = SprocketsProxy.new(Sprockets::Environment.new)
 ARGF.each_line do |line|
   command, *args = line.split
   content = proxy.process_command(command, args)
-  unless content.empty?
-    num_lines = content.count("\n")
-    num_lines = 1 if num_lines.zero?
-    $stdout << "#{num_lines}\n"
-    $stdout << "#{content}\n"
-    $stdout.flush
-  end
+  num_lines = content.count("\n")
+  num_lines = 1 if num_lines.zero?
+  $stdout << "#{num_lines}\n"
+  $stdout << "#{content}\n"
+  $stdout.flush
 end

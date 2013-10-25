@@ -9,7 +9,10 @@ defmodule DynamoCompanion.SprocketsProxy do
     cmd = if is_bitstring(cmd), do: bitstring_to_list(cmd), else: cmd
     port = open_port cmd
     paths = Keyword.get options, :paths, []
-    unless Enum.empty?(paths), do: send_request(port, :append_paths, paths)
+    unless Enum.empty?(paths) do
+      send_request(port, :append_paths, paths)
+      receive_content(port)
+    end
     port
   end
 
