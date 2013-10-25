@@ -8,7 +8,7 @@ defmodule DynamoCompanion.Supervisor do
   def init([]) do
     children = [
       worker(DynamoCompanion.AssetPipeline, [
-        [ paths: [ "test/fixtures/assets/javascripts", "test/fixtures/assets/stylesheets" ] ]
+        [ paths: [ "test/fixtures/assets" ] ]
       ])
     ]
     supervise(children, strategy: :one_for_one)
