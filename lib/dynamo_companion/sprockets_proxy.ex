@@ -1,19 +1,28 @@
 defmodule DynamoCompanion.SprocketsProxy do
-  require IEx
   def start(options // []) do
-    cmd = Keyword.get options, :command
-    if nil?(cmd) do
-      script_path = Path.expand('../../bin/asset_pipeline.rb', __DIR__)
-      cmd = 'bundle exec #{script_path}'
-    end
-    cmd = if is_bitstring(cmd), do: bitstring_to_list(cmd), else: cmd
-    port = open_port cmd
+    port = open_port build_command(options)
     paths = Keyword.get options, :paths, []
     unless Enum.empty?(paths) do
       send_request(port, :append_paths, paths)
       receive_content(port)
     end
     port
+  end
+
+  defp build_command(options) do
+    libs = Keyword.get(options, :libs, [])
+      |> Enum.map(&('--require #{&1}'))
+      |> Enum.join(" ")
+      |> bitstring_to_list
+
+    cmd = Keyword.get options, :command
+    if nil?(cmd) do
+      script_path = Path.expand('../../bin/asset_pipeline.rb', __DIR__)
+      cmd = 'bundle exec #{script_path}'
+    end
+    cmd = if is_bitstring(cmd), do: bitstring_to_list(cmd), else: cmd
+    unless Enum.empty?(libs), do: cmd = cmd ++ ' ' ++ libs
+    cmd
   end
 
   defp open_port(cmd) do

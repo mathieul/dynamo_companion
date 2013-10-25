@@ -1,6 +1,32 @@
 #!/usr/bin/env ruby
 
+require "optparse"
 require "sprockets"
+
+class CommandLineProcessor
+  attr_reader :arguments
+
+  def initialize(arguments)
+    @arguments = arguments
+  end
+
+  def process!
+    options[:libs].each { |lib| require lib }
+  end
+
+  private
+
+  def options
+    options = {:libs => []}
+    parser = OptionParser.new do |o|
+      o.on("-r", "--require LIBRARY", "require the library specified") do |lib|
+        options[:libs] << lib
+      end
+    end
+    parser.parse!
+    options
+  end
+end
 
 class SprocketsProxy
   SUPPORTED_COMMANDS = %w[append_paths get_files render_file render_bundle]
@@ -49,6 +75,7 @@ class SprocketsProxy
   end
 end
 
+CommandLineProcessor.new(ARGV).process!
 proxy = SprocketsProxy.new(Sprockets::Environment.new)
 
 ARGF.each_line do |line|
