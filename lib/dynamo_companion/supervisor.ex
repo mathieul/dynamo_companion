@@ -8,7 +8,8 @@ defmodule DynamoCompanion.Supervisor do
   def init([]) do
     children = [
       worker(DynamoCompanion.AssetPipeline, [
-        [ paths: [ "test/fixtures/assets" ], libs: [ "zurb-foundation" ] ]
+        [ paths: [ "test/fixtures/assets", "bower_components" ],
+          libs:  [ "zurb-foundation" ] ]
       ])
     ]
     supervise(children, strategy: :one_for_one)
