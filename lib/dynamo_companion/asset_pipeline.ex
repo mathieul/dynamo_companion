@@ -5,8 +5,15 @@ defmodule DynamoCompanion.AssetPipeline do
   defrecordp :state_rec, received: [], port: nil
 
   definit options do
-    port = SprocketsProxy.start options
+    paths = %W[assets bower_components] |> Enum.map fn path ->
+      Path.expand path, File.cwd!
+    end
+    port = Keyword.merge(options, [ paths: paths ]) |> SprocketsProxy.start
     state_rec port: port
+  end
+
+  defcall append_path(path), state: state do
+    reply execute_command(:append_paths, path, state), state
   end
 
   defcall get_files(path), state: state do
