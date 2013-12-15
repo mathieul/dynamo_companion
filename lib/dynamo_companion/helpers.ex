@@ -1,15 +1,15 @@
-defmodule DynamoCompanion.Helper do
+defmodule DynamoCompanion.Helpers do
   alias DynamoCompanion.AssetPipeline
 
-  def javascript_include_tag path do
-    render_asset_tag path, ".js", fn file ->
-      %s[<script src="#{file}"></script>]
+  def stylesheet_link_tag path do
+    render_asset_tag "stylesheets/#{path}", ".css", fn file ->
+      %s[<link href="#{file}" media="all" rel="stylesheet" />]
     end
   end
 
-  def stylesheet_link_tag path do
-    render_asset_tag path, ".css", fn file ->
-      %s[<link href="#{file}" media="all" rel="stylesheet" />]
+  def javascript_include_tag path do
+    render_asset_tag "javascripts/#{path}", ".js", fn file ->
+      %s[<script src="#{file}"></script>]
     end
   end
 
