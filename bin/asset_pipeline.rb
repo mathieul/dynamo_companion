@@ -1,6 +1,7 @@
 #!/usr/bin/env ruby
 
 require "optparse"
+require "logger"
 require "sprockets"
 
 class CommandLineProcessor
@@ -12,19 +13,26 @@ class CommandLineProcessor
 
   def process!
     options[:libs].each { |lib| require lib }
+    options
   end
 
   private
 
   def options
-    options = {:libs => []}
-    parser = OptionParser.new do |o|
-      o.on("-r", "--require LIBRARY", "require the library specified") do |lib|
-        options[:libs] << lib
+    @options ||= begin
+      options = {libs: [], debug: false}
+      parser = OptionParser.new do |o|
+        o.on("-r", "--require LIBRARY", "require the library specified") do |lib|
+          options[:libs] << lib
+        end
+
+        o.on("-d", "--debug", "log execution with logger to help debugging") do |debug|
+          options[:debug] = debug
+        end
       end
+      parser.parse!
+      options
     end
-    parser.parse!
-    options
   end
 end
 
@@ -75,15 +83,32 @@ class SprocketsProxy
   end
 end
 
-CommandLineProcessor.new(ARGV).process!
+options = CommandLineProcessor.new(ARGV).process!
+if options[:debug]
+  logger = Logger.new "asset_pipeline.log"
+  logger.level = Logger::DEBUG
+else
+  logger = Logger.new STDERR
+  logger.level = Logger::ERROR
+end
 proxy = SprocketsProxy.new(Sprockets::Environment.new)
 
+logger.info { ">>> STARTING LOG [#{$$}]" }
 ARGF.each_line do |line|
+  begin
   command, *args = line.split
+  logger.info { "process_command(#{command.inspect}, #{args.inspect})" }
   content = proxy.process_command(command, args)
   num_lines = content.count("\n")
   num_lines = 1 if num_lines.zero?
+  logger.info { "[#{$$}] num_lines: #{num_lines}" }
+  logger.info { "[#{$$}] content: #{content}" }
   $stdout << "#{num_lines}\n"
   $stdout << "#{content}\n"
   $stdout.flush
+  rescue StandardError => ex
+    logger.warn { "Error: #{ex}\nbacktrace: #{ex.backtrace.inspect}" }
+  end
 end
+logger.info { "<<<FINISHING LOG [#{$$}]" }
+logger.close

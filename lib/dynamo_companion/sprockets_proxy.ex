@@ -20,6 +20,7 @@ defmodule DynamoCompanion.SprocketsProxy do
       script_path = Path.expand('../../bin/asset_pipeline.rb', __DIR__)
       cmd = 'bundle exec #{script_path}'
     end
+    if Keyword.get(options, :debug, false), do: cmd = '#{cmd} -d'
     cmd = if is_bitstring(cmd), do: bitstring_to_list(cmd), else: cmd
     unless Enum.empty?(libs), do: cmd = cmd ++ ' ' ++ libs
     cmd
@@ -65,7 +66,9 @@ defmodule DynamoCompanion.SprocketsProxy do
   end
 
   defp read_num_lines_in_response(port) do
-    { num_lines, _ } = Integer.parse read_line(port)
+    res = Integer.parse read_line(port)
+    IO.puts "read_num_lines_in_response(#{inspect port}) -> #{inspect res}"
+    { num_lines, _ } = res
     num_lines
   end
 end
