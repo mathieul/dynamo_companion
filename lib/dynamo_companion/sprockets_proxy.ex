@@ -2,10 +2,7 @@ defmodule DynamoCompanion.SprocketsProxy do
   def start(options // []) do
     port = open_port build_command(options)
     paths = Keyword.get options, :paths, []
-    unless Enum.empty?(paths) do
-      send_request(port, :append_paths, paths)
-      receive_content(port)
-    end
+    unless Enum.empty?(paths), do: append_paths(port, paths)
     port
   end
 
@@ -28,47 +25,28 @@ defmodule DynamoCompanion.SprocketsProxy do
 
   defp open_port(cmd) do
     Port.open { :spawn, cmd }, [
-      { :line, 4096 },
-        :exit_status,
-        :hide,
+      { :packet, 4 },
         :use_stdio,
-        :stderr_to_stdout
+        :exit_status,
+        :binary
       ]
   end
 
   def stop(port), do: Port.close(port)
 
-  def send_request(port, cmd, args) do
-    request = '#{cmd} #{Enum.join args, " "}\n'
-    port <- { self, { :command, request } }
-  end
+  def append_paths(port, paths), do: exec_request(port, { :append_paths, paths })
 
-  def receive_content(port) do
-    num_lines = read_num_lines_in_response(port)
-    if num_lines > 0 do
-      1..num_lines
-        |> Enum.map(fn _ -> read_line(port) end)
-        |> Enum.join("\n")
-    else
-      ""
-    end
-  end
+  def get_files(port, path), do: exec_request(port, { :get_files, path })
 
-  defp read_line(port), do: read_line(port, [])
-  defp read_line(port, read) do
+  def render_file(port, path), do: exec_request(port, { :render_file, path })
+
+  def render_bundle(port, path), do: exec_request(port, { :render_bundle, path })
+
+  defp exec_request(port, request) do
+    payload = Kernel.term_to_binary(request)
+    Port.command(port, payload)
     receive do
-      { ^port, { :data, data } } ->
-        case data do
-          { :noeol, chunk } -> read_line(port, [ chunk | read ])
-          { :eol, chunk }   -> [ chunk | read ] |> Enum.reverse |> Enum.join
-        end
+      { ^port, { :data, data } } -> binary_to_term(data)
     end
-  end
-
-  defp read_num_lines_in_response(port) do
-    res = Integer.parse read_line(port)
-    IO.puts "read_num_lines_in_response(#{inspect port}) -> #{inspect res}"
-    { num_lines, _ } = res
-    num_lines
   end
 end

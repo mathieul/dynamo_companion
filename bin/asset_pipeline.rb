@@ -2,6 +2,7 @@
 
 require "optparse"
 require "logger"
+require "erlectricity"
 require "sprockets"
 
 class CommandLineProcessor
@@ -37,48 +38,79 @@ class CommandLineProcessor
 end
 
 class SprocketsProxy
-  SUPPORTED_COMMANDS = %w[append_paths get_files render_file render_bundle]
-
   attr_reader :environment
 
   def initialize(environment)
     @environment = environment
   end
 
-  def process_command(command, args)
-    return "ERROR: command #{command.inspect} not supported." unless SUPPORTED_COMMANDS.include?(command)
-    send(command, args)
+  def append_paths(paths)
+    paths.each { |path| environment.append_path(path) }
+    :ok
+  rescue StandardError => ex
+    [:error, ex.to_s]
+  end
+
+  def get_files(path)
+    [:files, get(:file_list, path)]
+  end
+
+  def render_file(path)
+    [:content, get(:file, path)]
+  end
+
+  def render_bundle(path)
+    [:content, get(:bundle, path)]
   end
 
   private
-
-  def append_paths(paths)
-    paths.each { |path| environment.append_path(path) }
-    "ok"
-  end
-
-  def get_files(paths)
-    get(:file_list, paths.first)
-  end
-
-  def render_file(paths)
-    get(:file, paths.first)
-  end
-
-  def render_bundle(paths)
-    get(:bundle, paths.first)
-  end
 
   def get(kind, path)
     bundle = environment[path]
     return path unless bundle
     case kind
     when :file_list
-      bundle.to_a.map(&:logical_path).join(" ")
+      bundle.to_a.map(&:logical_path)
     when :file
       bundle.body
     when :bundle
       bundle.to_s
+    end
+  end
+end
+
+class QueryProcessor
+  attr_reader :proxy, :logger
+
+  def initialize(proxy, logger)
+    @proxy  = proxy
+    @logger = logger
+  end
+
+  def run!(receiver)
+    logger.info " -> query processor setup"
+    receiver.when([:append_paths, Array]) do |paths|
+      logger.info " -> append_paths(#{paths.inspect})"
+      receiver.send! proxy.append_paths(paths)
+      receiver.receive_loop
+    end
+
+    receiver.when([:get_files, String]) do |path|
+      logger.info " -> get_files(#{path.inspect})"
+      receiver.send! proxy.get_files(path)
+      receiver.receive_loop
+    end
+
+    receiver.when([:render_file, String]) do |path|
+      logger.info " -> render_file(#{path.inspect})"
+      receiver.send! proxy.render_file(path)
+      receiver.receive_loop
+    end
+
+    receiver.when([:render_bundle, String]) do |path|
+      logger.info " -> render_bundle(#{path.inspect})"
+      receiver.send! proxy.render_bundle(path)
+      receiver.receive_loop
     end
   end
 end
@@ -92,23 +124,9 @@ else
   logger.level = Logger::ERROR
 end
 proxy = SprocketsProxy.new(Sprockets::Environment.new)
+query_processor = QueryProcessor.new(proxy, logger)
 
-logger.info { ">>> STARTING LOG [#{$$}]" }
-ARGF.each_line do |line|
-  begin
-  command, *args = line.split
-  logger.info { "process_command(#{command.inspect}, #{args.inspect})" }
-  content = proxy.process_command(command, args)
-  num_lines = content.count("\n")
-  num_lines = 1 if num_lines.zero?
-  logger.info { "[#{$$}] num_lines: #{num_lines}" }
-  logger.info { "[#{$$}] content: #{content}" }
-  $stdout << "#{num_lines}\n"
-  $stdout << "#{content}\n"
-  $stdout.flush
-  rescue StandardError => ex
-    logger.warn { "Error: #{ex}\nbacktrace: #{ex.backtrace.inspect}" }
-  end
-end
-logger.info { "<<<FINISHING LOG [#{$$}]" }
+logger.info { ">>> BEGIN [#{$$}]" }
+receive(STDIN, STDOUT) { |receiver| query_processor.run!(receiver) }
+logger.info { "<<< END   [#{$$}]" }
 logger.close

@@ -5,6 +5,7 @@ GEM
       coffee-script-source
       execjs
     coffee-script-source (1.6.3)
+    erlectricity (1.1.1)
     execjs (2.0.2)
     hike (1.2.3)
     multi_json (1.8.2)
@@ -24,6 +25,7 @@ PLATFORMS
 
 DEPENDENCIES
   coffee-script
+  erlectricity
   sass
   sprockets (~> 2.0)
   zurb-foundation
