@@ -13,23 +13,31 @@ defmodule DynamoCompanion.AssetPipeline do
   end
 
   defcall append_path(path), state: state do
-    result = SprocketsProxy.append_paths(state_rec(state, :port), [ path ])
-    reply result, state
+    case SprocketsProxy.append_paths(state_rec(state, :port), [ path ]) do
+      :ok -> set_and_reply state, :ok
+      error -> set_and_reply state, { :error, error }
+    end
   end
 
   defcall get_files(path), state: state do
-    result = SprocketsProxy.get_files(state_rec(state, :port), path)
-    reply result, state
+    case SprocketsProxy.get_files(state_rec(state, :port), path) do
+      { :files, files } -> set_and_reply state, tuple_to_list(files)
+      error -> set_and_reply state, { :error, error }
+    end
   end
 
   defcall render_file(path), state: state do
-    result = SprocketsProxy.render_file(state_rec(state, :port), path)
-    reply result, state
+    case SprocketsProxy.render_file(state_rec(state, :port), path) do
+      { :content, content } -> set_and_reply state, content
+      error -> set_and_reply state, { :error, error }
+    end
   end
 
   defcall render_bundle(path), state: state do
-    result = SprocketsProxy.render_bundle(state_rec(state, :port), path)
-    reply result, state
+    case SprocketsProxy.render_bundle(state_rec(state, :port), path) do
+      { :content, content } -> set_and_reply state, content
+      error -> set_and_reply state, { :error, error }
+    end
   end
 
   defcast stop, state: state do
