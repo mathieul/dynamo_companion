@@ -3,13 +3,13 @@ defmodule DynamoCompanion.Helpers do
 
   def stylesheet_link_tag path do
     render_asset_tag "stylesheets/#{path}", ".css", fn file, extra ->
-      %s[<link href="#{file}#{extra}" media="all" rel="stylesheet" />]
+      %s[<link href="/assets/#{file}#{extra}" media="all" rel="stylesheet" />]
     end
   end
 
   def javascript_include_tag path do
     render_asset_tag "javascripts/#{path}", ".js", fn file, extra ->
-      %s[<script src="#{file}#{extra}"></script>]
+      %s[<script src="/assets/#{file}#{extra}"></script>]
     end
   end
 
