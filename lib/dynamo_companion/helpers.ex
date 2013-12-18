@@ -2,14 +2,14 @@ defmodule DynamoCompanion.Helpers do
   alias DynamoCompanion.AssetPipeline
 
   def stylesheet_link_tag path do
-    render_asset_tag "stylesheets/#{path}", ".css", fn file ->
-      %s[<link href="#{file}" media="all" rel="stylesheet" />]
+    render_asset_tag "stylesheets/#{path}", ".css", fn file, extra ->
+      %s[<link href="#{file}#{extra}" media="all" rel="stylesheet" />]
     end
   end
 
   def javascript_include_tag path do
-    render_asset_tag "javascripts/#{path}", ".js", fn file ->
-      %s[<script src="#{file}"></script>]
+    render_asset_tag "javascripts/#{path}", ".js", fn file, extra ->
+      %s[<script src="#{file}#{extra}"></script>]
     end
   end
 
@@ -19,10 +19,10 @@ defmodule DynamoCompanion.Helpers do
     end
     if Mix.env == :dev do
       AssetPipeline.get_files(path)
-        |> Enum.map(renderer)
+        |> Enum.map(&(renderer.(&1, "?body=1")))
         |> Enum.join("\n")
     else
-      renderer.(path)
+      renderer.(path, "")
     end
   end
 end
