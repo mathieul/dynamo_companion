@@ -7,10 +7,16 @@ defmodule DynamoCompanion.Supervisor do
 
   def init([]) do
     children = [
-      worker(DynamoCompanion.AssetPipeline, [
-        [ libs:  [ "zurb-foundation" ], debug: false ]
-      ])
+      worker(DynamoCompanion.AssetPipeline, [ asset_pipeline_config ])
     ]
     supervise(children, strategy: :one_for_one)
+  end
+
+  defp asset_pipeline_config do
+    libs = Mix.project[:dynamo_companion][:libs]
+    debug = Mix.project[:dynamo_companion][:debug]
+
+    [ libs:  (if libs == nil, do: [], else: libs),
+      debug: (if debug == nil, do: false, else: debug) ]
   end
 end
