@@ -10,7 +10,7 @@ defmodule Mix.Tasks.Companion.Setup do
 
   defp setup_bundler do
     Mix.shell.info "Setup Bundler."
-    source_path = Path.expand('../../..', __DIR__)
+    source_path = Path.expand('../../../ruby', __DIR__)
     %W[Gemfile Gemfile.lock] |> Enum.each fn name ->
       File.cp "#{source_path}/#{name}", name, ask_for_confirmation
     end

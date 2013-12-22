@@ -14,7 +14,7 @@ defmodule DynamoCompanion.SprocketsProxy do
 
     cmd = Keyword.get options, :command
     if nil?(cmd) do
-      script_path = Path.expand('../../bin/asset_pipeline.rb', __DIR__)
+      script_path = Path.expand('../../ruby/bin/asset_pipeline.rb', __DIR__)
       cmd = 'bundle exec #{script_path}'
     end
     if Keyword.get(options, :debug, false), do: cmd = '#{cmd} -d'
